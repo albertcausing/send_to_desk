@@ -27,4 +27,5 @@ chmod +x send_to_desk
 
 mv send_to_desk /usr/local/bin/send_to_desk
 
+echo
 echo "Installation complete."
