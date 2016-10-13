@@ -1,0 +1,161 @@
+#!/usr/bin/env python
+
+import sys
+import urllib, urllib2, json, base64
+from HTMLParser import HTMLParser
+
+intercom_user = 'INTERCOM_APPID'
+intercom_pass = 'INTERCOM_KEY'
+
+desk_user = 'DESK_USER'
+desk_pass = 'DESK_PASS'
+
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        self.reset()
+        self.fed = []
+    def handle_data(self, d):
+        self.fed.append(d)
+    def get_data(self):
+        return ''.join(self.fed)
+
+def strip_tags(html):
+    s = MLStripper()
+    s.feed(html)
+    return s.get_data()
+
+class IntercomConversation:
+
+    users  = {}
+    
+    intercom_api  = 'https://api.intercom.io'
+
+    def __init__(self, conversation_id):
+        self.conversation_id = conversation_id
+
+    def call_intercom_api(self, path):
+        url = self.intercom_api + path
+        request = urllib2.Request(url)
+        request.add_header('Accept', 'application/json')
+        base64string = base64.b64encode('%s:%s' % (intercom_user, intercom_pass))
+        request.add_header("Authorization", "Basic %s" % base64string)
+
+        result = urllib2.urlopen(request)
+        return json.loads(result.read())
+
+    def get_user(self, user_id, type):
+
+        if user_id not in self.users:
+            if type == 'user':
+                self.users[user_id] = self.call_intercom_api("/users/" + user_id)
+            else:
+                self.users[user_id] = self.call_intercom_api("/admins/" + user_id)
+
+        return {
+            'name': self.users[user_id]['name'],
+            'email': self.users[user_id]['email']
+        }
+
+    def get_conversation(self):
+        conversation = self.call_intercom_api("/conversations/" + self.conversation_id)
+        return conversation
+
+    def format_message(self, user, email, body, type):
+        body = strip_tags(body)
+
+        if type == 'note':
+            prefix = 'NOTE: '
+        else:
+            prefix = ''
+
+        message = prefix + user + ' (' + email + "):\n" + body + "\n\n"
+        return message.encode('ascii', 'replace')
+            
+
+    def parse_conversation(self):
+        conversation = self.get_conversation()
+
+        # First message should have the initial user's email and name.
+        if conversation['conversation_message']:
+            message = conversation['conversation_message']
+            user = self.get_user(message['author']['id'], message['author']['type'])
+
+            if user['name'] and user['email'] and message['body']:
+                author_name  = user['name']
+                author_email = user['email']
+                msg          = self.format_message(user['name'], user['email'], message['body'], 'comment')
+
+        if conversation['conversation_parts']['conversation_parts']:
+            for part in conversation['conversation_parts']['conversation_parts']:
+                user = self.get_user(part['author']['id'], part['author']['type'])
+                if user['name'] and user['email'] and part['body']:
+                    msg += self.format_message(user['name'], user['email'], part['body'], part['part_type'])
+        
+        return {
+            'name': author_name,
+            'email': author_email,
+            'message': msg
+        }
+
+class DeskAPI:
+
+    desk_api = 'https://pantheon-systems.desk.com/api/v2/cases'
+
+    def __init__(self):
+        pass
+
+    def call_desk_api(self, data):
+        url = self.desk_api
+        
+        request = urllib2.Request(url)
+
+        request.add_header('Accept', 'application/json')
+        request.add_header('Content-Type', 'application/json')
+        base64string = base64.b64encode('%s:%s' % (desk_user, desk_pass))
+        request.add_header("Authorization", "Basic %s" % base64string)
+
+        result = urllib2.urlopen(request, json.dumps(data))
+        return json.loads(result.read())
+
+    def create_case(self, subject, site_uuid, email, message):
+        case = {
+            "type": "email",
+            "subject": subject,
+            "status": "open",
+            "labels": [
+                "Chat"
+            ],
+            "message": {
+                "direction": "in",
+                "to": "helpdesk@getpantheon.com",
+                "from": email,
+                "subject": subject,
+                "body": message,
+                "body_html": message
+          },
+          "custom_fields": {
+                "site_uuid": site_uuid
+            }
+        }
+        return self.call_desk_api(case)
+
+if __name__ == '__main__':
+    try:
+        subject = ''
+        while not subject:
+            subject = raw_input("Please enter the ticket's subject: ")
+
+        site_uuid = raw_input("Please enter the site UUID (optional): ")
+
+        conversation_id = sys.argv[1]
+        conversation = IntercomConversation(conversation_id)
+        chat = conversation.parse_conversation()
+        
+        desk = DeskAPI()
+        result = desk.create_case(subject, site_uuid, chat['email'], chat['message'])
+        if result['id']:
+            print 'Ticket created: https://pantheon-systems.desk.com/agent/case/{0}'.format(result['id'])
+
+    except IndexError:
+        print "ERROR: missing conversation ID as first argument."
