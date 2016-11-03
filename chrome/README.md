@@ -1,0 +1,1 @@
+# Chrome extension for sending intercom conversations to desk.
