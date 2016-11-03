@@ -1,0 +1,90 @@
+<!doctype html>
+<!--
+ This page is shown when the extension button is clicked, because the
+ "browser_action" field in manifest.json contains the "default_popup" key with
+ value "popup.html".
+ -->
+<html>
+  <head>
+    <title>Getting Started Extension's Popup</title>
+    <style>
+      body {
+        font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
+        font-size: 100%;
+        width:300px;
+        background-color: #efefef;
+        color: #111;
+      }
+
+      h1 {
+        font-size: 14px;
+      }
+
+      p, input, button {
+        font-size: 12px;
+      }
+
+      #subject, #intercom-conversation-id, #site {
+        width: 250px;
+      }
+
+      #message, #error {
+        border: 1px solid;
+        margin: 10px 0px;
+        padding:15px 10px;
+        background-repeat: no-repeat;
+        display: none;
+        font-size: 12px;
+      }
+
+      #message {
+        color: #4F8A10;
+        background-color: #DFF2BF;
+      }
+
+      #error {
+        color: #D8000C;
+        background-color: #FFBABA;
+      }
+
+      #send-to-desk {
+        padding: 10px;
+        background-color: #EFD01B;
+        color: #111;
+        border: none;
+      }
+    </style>
+    
+    <script src="popup.js"></script>
+  </head>
+  <body>
+    
+    <div id="intercom-conversation">
+      
+      <h1>Send Intercom Conversation to Desk</h1>
+      <div id="message"></div>
+      <div id="error"></div>
+     
+      <div id="main">
+        <p>
+          Intercom Conversation ID<br />
+          <input type="text" name="intercom-conversation" id="intercom-conversation-id" value="" />
+        </p>
+        
+        <p>
+          Conversation Subject<br />
+          <input type="text" name="subject" id="subject" value="" />
+        </p>
+
+        <p>
+          Site UUID<br />
+          <input type="text" name="site" id="site" value="" />
+        </p>
+        
+        <button name="send-to-desk" id="send-to-desk">Send To Desk</button>
+      </div>
+
+    </div>
+  </body>
+</html>
+

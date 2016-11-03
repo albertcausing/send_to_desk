@@ -1,0 +1,17 @@
+{
+  "manifest_version": 2,
+
+  "name": "Send Intercom Chat to Desk",
+  "description": "This extension queries the Intercom API and creates a desk ticket from it.",
+  "version": "1.0",
+
+  "browser_action": {
+    "default_icon": "pantheon-logo.png",
+    "default_popup": "popup.html"
+  },
+  "permissions": [
+    "activeTab",
+    "https://*.intercom.io/",
+    "https://*.desk.com/"
+  ]
+}
