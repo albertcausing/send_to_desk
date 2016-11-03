@@ -4,7 +4,7 @@
 
 1. Generate your Intercom API key by going to Intercom's App Settings / API Keys.
 
-2. Clone the repo locally and edit `chrome/pop.js`. Search for the lines below and replace them with your actual API keys and desk username and password. These are needed in order to connect to Intercom's and Desk's API.
+2. Clone the repo locally and edit `chrome/popup.js`. Search for the lines below and replace them with your actual API keys and desk username and password. These are needed in order to connect to Intercom's and Desk's API.
 
 ```
 intercom_user = 'INTERCOM_APPID';
