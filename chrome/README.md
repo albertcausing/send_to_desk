@@ -23,3 +23,5 @@ desk_pass = 'DESK_PASS';
 ![Chrome Developer Mode](http://content.screencast.com/users/AlexDicix/folders/Jing/media/90fd6c1a-7621-4c9d-83ca-45c32e3de596/00000777.png)
 
 You should now see a Pantheon icon on the upper-right corner of your Google Chrome browser. Whenever you want to send a conversation to Desk, you should go to the actual conversation in Intercom (the one that has something like conversations/6621023537 in the url) and hit that button. A form should appear that would send the conversation to a desk ticket.
+
+![Chrome Developer Mode](http://content.screencast.com/users/AlexDicix/folders/Jing/media/06a092c0-9c53-476e-94b1-ccce89c1406c/00000778.png)
