@@ -24,8 +24,12 @@
         font-size: 12px;
       }
 
-      #subject, #intercom-conversation-id, #site {
+      #subject, #intercom-conversation-id, #site, #summary {
         width: 250px;
+      }
+
+      #summary {
+        height: 100px;
       }
 
       #message, #error {
@@ -60,7 +64,7 @@
   <body>
     
     <div id="intercom-conversation">
-      
+
       <h1>Send Intercom Conversation to Desk</h1>
       <div id="message"></div>
       <div id="error"></div>
@@ -74,6 +78,11 @@
         <p>
           Conversation Subject<br />
           <input type="text" name="subject" id="subject" value="" />
+        </p>
+
+        <p>
+          Summary<br />
+          <textarea id="summary" name="summary"></textarea>
         </p>
 
         <p>

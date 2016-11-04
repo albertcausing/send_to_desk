@@ -26,8 +26,12 @@ var call_intercom_api = function(url, successHandler, errorHandler) {
 /**
  * Function for calling Desk API.
  */
-var call_desk_api = function(data, successHandler, errorHandler) {
+var call_desk_api = function(data, path='', successHandler, errorHandler) {
   url = 'https://pantheon-systems.desk.com/api/v2/cases';
+
+  if (path != '') {
+    url = url + path;
+  }
 
   desk_user = 'DESK_USER';
   desk_pass = 'DESK_PASS';
@@ -102,11 +106,14 @@ function getIntercomUser(userID, type) {
  */
 function getIntercomConversation(conversationID, callback, errorCallback) {
   
+  conversation = '';
+  notes = '';
+
   url = '/conversations/' + conversationID
   data = call_intercom_api(url);
   if (data.conversation_message) {
     user = getIntercomUser(data.conversation_message.author.id, data.conversation_message.author.type);
-    conversation = user.name + " (" + user.email + "):\n"
+    conversation += user.name + " (" + user.email + "):\n"
     conversation += strip_tags(data.conversation_message.body) + "\n\n";
     author = user;
       
@@ -117,8 +124,8 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
         // Only choose comments and notes.
         if (messages[i].part_type == 'note') {
           user = getIntercomUser(messages[i].author.id, messages[i].author.type);
-          conversation += user.name + " (" + user.email + "):\n"
-          conversation += 'NOTE: ' + strip_tags(messages[i].body) + "\n\n";  
+          notes += user.name + " (" + user.email + "):\n"
+          notes += 'NOTE: ' + strip_tags(messages[i].body) + "\n\n";
         }
         else if (messages[i].part_type == 'comment') {
           user = getIntercomUser(messages[i].author.id, messages[i].author.type);
@@ -129,7 +136,7 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
     }
   }
 
-  callback(conversation, author);
+  callback(conversation, notes, author);
 }
 
 /**
@@ -156,6 +163,13 @@ function desk_create_case(subject, site_uuid, email, message) {
             }
         };
   return call_desk_api(JSON.stringify(desk_case));
+}
+
+function desk_create_note(case_id, note) {
+  var desk_note = {
+    "body": note
+  }
+  call_desk_api(JSON.stringify(desk_note), '/' + case_id + '/notes');
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -186,18 +200,29 @@ document.addEventListener('DOMContentLoaded', function() {
       return;
     }
     
-    renderMessage("Grabbing conversation ID: " + conversationID);
-    conversation = getIntercomConversation(conversationID, function(conversation, author) {
+    conversation = getIntercomConversation(conversationID, function(conversation, notes, author) {
 
       subject = document.getElementById('subject').value;
       site = document.getElementById('site').value;
+      summary = document.getElementById('summary').value;
+
+      if (summary != "") {
+        conversation = summary + "\n\n" + conversation;
+      }
+
       // Call desk api.
       result = desk_create_case(subject, site, author.email, conversation);
       if (result.id != '') {
+
+        if (notes != '') {
+          desk_create_note(result.id, notes);
+        }
+
         renderMessage("Ticket <a target='_blank' href='https://pantheon-systems.desk.com/agent/case/" + result.id + "'>#" + result.id + "</a> created successfully.");
         document.getElementById('main').style.display = 'none';
         document.getElementById('subject').value = "";
         document.getElementById('site').value = "";
+        document.getElementById('summary').value = "";
         document.getElementById('intercom-conversation-id').value = "";
       }
       
