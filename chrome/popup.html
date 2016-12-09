@@ -23,21 +23,25 @@
 	  }
       h1 {
         font-size: 14px;
+        margin: 0;
       }
 
       p, input, button {
         font-size: 12px;
       }
+      p {
+	      margin: 3px 0;
+      }
 
       #subject, #intercom-conversation-id, #summary, #close_message {
         width: 250px;
       }
-      #site {
+      #site, #macros {
 	    width: 220px;  
       }
 
-      #summary {
-        height: 100px;
+      #summary, #close_message  {
+        height: 45px;
       }
 
       #message, #error {
@@ -70,20 +74,46 @@
       #closer {
           display: block;
           border-top: 1px solid #888;
-          margin: 10px 0 30px 0;
+          margin: 5px 0 5px 0;
           padding-top: 10px;
           background-color: #DDD;
           padding:10px;
       }
-      #close_message {
-          height: 50px;
-      }
       em {
           font-size: 10px; 
       }
+    #macros {
+	   margin: 0 10px;
+	   border:1px solid #333;
+	   height: 30px;
+	   width: 250px;
+    }
+    #macros_result {
+	    display: none;
+	    position: absolute;
+	    bottom: 26px;
+	    background-color: #f0f0f0;
+		border:1px solid #333;
+	    width: 94%;
+	    margin: 2%;
+	    padding: 0;
+    }
+	#macros_result ul {
+		padding: 0;
+		margin: 0;
+	}
+	#macros_result ul li {
+		list-style: none;
+	    padding: 5px 5px;
+	    font-size: 12px;
+	    cursor: pointer;
+	}
+	#macros_result ul li:hover {		
+		background-color: #aaaaaa;		
+	}
     </style>
     <script src="jquery.min.js" type="text/javascript"></script>
-    <script src="config.js" type="text/javascript"></script>    
+    <script src="fuse.min.js" type="text/javascript"></script>
     <script src="popup.js" type="text/javascript"></script>
 </head>
 
@@ -119,6 +149,11 @@
         <textarea id="close_message"></textarea><br>
         <em>Default: This chat session has ended.</em></p>
         <button name="admin_close" id="admin_close">Close Active Chat Session</button><br>
+    </div>
+    
+    <div id="deskmacros">
+	    <div class=="macros_result" id="macros_result"></div>
+	    <p><input type="text" id="macros" value=""  placeholder="Search Macros (min 4 chars)" /></p>
     </div>
     
 </body>

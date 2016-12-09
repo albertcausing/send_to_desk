@@ -42,13 +42,13 @@ var call_intercom_api_post = function(url, data) {
 /**
  * Function for calling Desk API.
  */
-var call_desk_api = function(data, path = '', successHandler, errorHandler) {
-		url = 'https://pantheon-systems.desk.com/api/v2/cases';
+var call_desk_api = function(data, path = '', method='POST',successHandler, errorHandler) {
+		url = 'https://pantheon-systems.desk.com/api/v2/';
 		if (path != '') {
 			url = url + path;
 		}
 		var xhr = typeof XMLHttpRequest != 'undefined' ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
-		xhr.open('POST', url, false); // false here sets to synchronous mode.
+		xhr.open(method, url, false); // false here sets to synchronous mode.
 		xhr.setRequestHeader("Accept", "application/json");
 		xhr.setRequestHeader("Content-Type", "application/json");
 		xhr.setRequestHeader("Authorization", "Basic " + btoa(desk_user + ":" + desk_pass));
@@ -193,7 +193,7 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
 							body += "!" + match[1] + "! \n";
 						});
 						if(messages[i].part_type == "note") {
-							body = strip_tags(body);							
+							body = strip_tags(body)+"\n";							
 						} else {
 							body = strip_tags(body) + "\n\n\n";
 						}	
@@ -231,14 +231,14 @@ function desk_create_case(subject, site_uuid, email, message) {
 			"site_uuid": site_uuid
 		}
 	};
-	return call_desk_api(JSON.stringify(desk_case));
+	return call_desk_api(JSON.stringify(desk_case), 'cases');
 }
 
 function desk_create_note(case_id, note) {
 	var desk_note = {
 		"body": note
 	}
-	call_desk_api(JSON.stringify(desk_note), '/' + case_id + '/notes');
+	call_desk_api(JSON.stringify(desk_note), 'cases/' + case_id + '/notes');
 }
 
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
@@ -277,6 +277,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		}
 		
 	});
+	
 	
 	//Lets try to load site-id
 	var search_siteid = document.getElementById('search_siteid');
@@ -340,6 +341,57 @@ document.addEventListener('DOMContentLoaded', function() {
 	    };
 
 		call_intercom_api_post(url, JSON.stringify(data));
+		document.getElementById('close_message').value = "";
+	});
+	
+	//Load Desk Macros
+	var macros = call_desk_api(null,'macros?page=1&per_page=200','GET');
+	
+	var options = {
+	  shouldSort: true,
+	  threshold: 0.3,
+	  location: 0,
+	  distance: 100,
+	  maxPatternLength: 32,
+	  keys: [
+	    "name",
+	    "id"
+	]
+	};
+
+//    console.log(JSON.stringify(macros._embedded.entries));
+	var fuse = new Fuse(macros._embedded.entries, options);
+	var macros_result = jQuery('#macros_result');
+	var search_macros = document.getElementById('macros');
+	search_macros.addEventListener('keyup', function() {
+		 if(search_macros.value.length > 3) {
+		    jQuery('#macros_result').fadeIn('fast');  
+			var macros_items = "<ul>";
+			jQuery.each(fuse.search(search_macros.value), function(i, v){
+				macros_items += "<li rel-id='"+v.id+"'>"+v.name+"</li>";
+			});
+			macros_items += "</ul>";
+			macros_result.html(macros_items);
+		 } else {
+			macros_result.html("");
+		    jQuery('#macros_result').fadeOut('fast');  			
+		 }
+	});	
+	
+    jQuery(document).on('click','#macros_result li', function(){
+	   var macro_show = call_desk_api(null,'macros/'+jQuery(this).attr('rel-id')+'/actions','GET');
+	   jQuery('#macros_result').fadeOut('fast'); 
+
+	   var macro_text =  macro_show._embedded.entries.find((item) => item.type === 'set-case-quick-reply').value;
+
+		chrome.tabs.executeScript(null,{
+//			code: "var macro_text="+JSON.stringify(macro_text)+";"
+//			code: 'var macro_text="'+macro_text+'";'
+
+			code: "var macro_text=`" + macro_text + "`;"
+		}, function(){
+			chrome.tabs.executeScript(null, {file:"macro.js"})
+		});
 	});
 });
 
@@ -397,7 +449,21 @@ function getConversation(conversationID) {
 				});
 				notes += "-----"
 				desk_create_note(result.id, notes);
-				renderMessage("Ticket <a target='_blank' href='https://pantheon-systems.desk.com/agent/case/" + result.id + "'>#" + result.id + "</a> created successfully.");
+				
+				renderMessage("Sent to Desk!");
+
+				var create_note_msg  = "Desk: Ticket <a target='_blank' href='https://pantheon-systems.desk.com/agent/case/" + result.id + "'>#" + result.id + "</a> created successfully.<br>";
+				 	create_note_msg += "Dashboard: Ticket <a target='_blank' href='https://dashboard.pantheon.io/sites/" + document.getElementById('site').value + "#support/ticket/" + result.id + "'>#" + result.id + "</a> created successfully.";
+
+			    var data = { 
+				    "type": "admin",
+			    	"admin_id": "873699", 
+			    	"body": create_note_msg,
+			    	"message_type": "note"
+			    };
+		
+				call_intercom_api_post("/conversations/"+conversationID+"/reply", JSON.stringify(data));
+							
 				document.getElementById('main').style.display = 'none';
 				document.getElementById('subject').value = "";
 				document.getElementById('site').value = "";
