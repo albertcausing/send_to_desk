@@ -126,14 +126,11 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
 	var body = "";
 	url = '/conversations/' + conversationID
 	data = call_intercom_api(url);
-	console.log(data);
 	if (data.conversation_message) {
 		user = getIntercomUser(data.conversation_message.author.id, data.conversation_message.author.type);
 		author = user;
 		messages = data.conversation_parts.conversation_parts;
 
-		console.log(author);
-				
 		convo['comment'] = convo['note'] = convo['close'] = convo['open'] = "";
 		
 		convo['comment'] =  "*" + author.name + "* [Chat Start]\n";
