@@ -130,7 +130,11 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
 		user = getIntercomUser(data.conversation_message.author.id, data.conversation_message.author.type);
 		author = user;
 		messages = data.conversation_parts.conversation_parts;
+
 		convo['comment'] = convo['note'] = convo['close'] = convo['open'] = "";
+		
+		convo['comment'] =  "*" + author.name + "* [Chat Start]\n";
+		convo['comment'] += html2textile(data.conversation_message.body);
 
 		var oper = ""
 		if (data.conversation_parts.conversation_parts) {
@@ -166,32 +170,8 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
 						body = "";
 					} else {
 						body = "";
-						body = String(messages[i].body).trim();
-						body = body.replace("<pre>", "\n\nbc.. ");
-						body = body.replace("</pre>", "\n\np. ");
-						body = body.replace("<b>", "*");
-						body = body.replace("</b>", "*");
-						body = body.replace("<i>", "_");
-						body = body.replace("</i>", "_");
-						body = body.replace("<h1>", "\n\nh1. ");
-						body = body.replace("</h1>", "\n\n");
-						body = body.replace("<h2>", "\n\nh2. ");
-						body = body.replace("</h2>", "\n\n");
-						var match = [];
-						body.replace(/[^<]*(<a href="([^"]+)"(.*)>([^<]+)<\/a>)/g, function() {
-							match = Array.prototype.slice.call(arguments, 1, 5);
-							if (match[3] == match[1]) {
-								body = strip_tags(body);
-								body = body.replace(match[3], "");
-								body += match[3] + " \n";
-							} else {
-								body += '"' + match[3] + '":' + match[1] + " \n";
-							}
-						});
-						body.replace(/[^<]*(<img src="([^"]+)">)/g, function() {
-							match = Array.prototype.slice.call(arguments, 1, 4);
-							body += "!" + match[1] + "! \n";
-						});
+						body = html2textile(messages[i].body);
+												
 						if(messages[i].part_type == "note") {
 							body = strip_tags(body)+"\n";							
 						} else {
@@ -207,6 +187,44 @@ function getIntercomConversation(conversationID, callback, errorCallback) {
 	renderMessage("Transcript collected...");			        			
 	callback(convo.comment, convo.note, author);
 }
+
+
+/**
+ * Better formatter for Desk
+ **/
+function html2textile(msg) {
+    var body = "";
+	body = String(msg).trim();
+	body = body.replace("<pre>", "\n\nbc.. ");
+	body = body.replace("</pre>", "\n\np. ");
+	body = body.replace("<b>", "*");
+	body = body.replace("</b>", "*");
+	body = body.replace("<i>", "_");
+	body = body.replace("</i>", "_");
+	body = body.replace("<h1>", "\n\nh1. ");
+	body = body.replace("</h1>", "\n\n");
+	body = body.replace("<h2>", "\n\nh2. ");
+	body = body.replace("</h2>", "\n\n");
+	body = body.replace("<p>", "");
+	body = body.replace("</p>", "\n\n");
+	var match = [];
+	body.replace(/[^<]*(<a href="([^"]+)"(.*)>([^<]+)<\/a>)/g, function() {
+		match = Array.prototype.slice.call(arguments, 1, 5);
+		if (match[3] == match[1]) {
+			body = strip_tags(body);
+			body = body.replace(match[3], "");
+			body += match[3] + " \n";
+		} else {
+			body += '"' + match[3] + '":' + match[1] + " \n";
+		}
+	});
+	body.replace(/[^<]*(<img src="([^"]+)">)/g, function() {
+		match = Array.prototype.slice.call(arguments, 1, 4);
+		body += "!" + match[1] + "! \n";
+	});
+	return body;
+}
+
 
 /**
  * Creates a json object that will be used to call Desk's API and create a case.
@@ -473,11 +491,12 @@ function getConversation(conversationID) {
 				setCookie(conversationID + '_subject', document.getElementById('subject').value, 1);
 				setCookie(conversationID + '_summary', document.getElementById('summary').value, 1);
 				setCookie(conversationID + '_site', document.getElementById('site').value, 1);
-			}
+			}	
 		}, function(errorMessage) {
 			renderError('Error: ' + errorMessage);
 		});
-	
+		
+
 	    dfrd1.resolve();
 	},500);
 	    
