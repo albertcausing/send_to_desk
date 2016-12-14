@@ -1,9 +1,3 @@
-/*Configuration*/
-var intercom_user = 'INTERCOM_APPID';
-var intercom_pass = 'INTERCOM_KEY';
-var desk_user = 'DESK_USER';
-var desk_pass = 'DESK_PASS';
-
 /**
  * Function for calling Intercom API.
  */
