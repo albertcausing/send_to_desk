@@ -233,7 +233,7 @@ function desk_create_case(subject, site_uuid, email, message) {
 		"message": {
 			"direction": "out",
 			"status": "sent",
-			"to": "helpdesk@getpantheon.com",
+			"to": email,
 			"from": email,
 			"subject": subject,
 			"body": message,
