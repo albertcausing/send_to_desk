@@ -334,6 +334,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		});
 	});
 	
+	/*
 	var admin_close = document.getElementById('admin_close');
 	admin_close.addEventListener('click', function() {
 		var body = "";
@@ -355,7 +356,7 @@ document.addEventListener('DOMContentLoaded', function() {
 		call_intercom_api_post(url, JSON.stringify(data));
 		document.getElementById('close_message').value = "";
 	});
-	
+	*/
 	//Load Desk Macros
 	var macros = call_desk_api(null,'macros?page=1&per_page=200','GET');
 	
