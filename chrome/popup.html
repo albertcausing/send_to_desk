@@ -13,13 +13,13 @@
         font-family: "Segoe UI", "Lucida Grande", Tahoma, sans-serif;
         font-size: 100%;
         width:300px;
-        background-color: #efefef;
-        color: #111;
+        background-color: #78868E;
+        color: white;
         margin:0;
       }
 	  #intercom-conversation {
 		  display:block;
-		  margin: 8px;
+		  margin: 0 8px 8px 8px;
 	  }
       h1 {
         font-size: 14px;
@@ -68,49 +68,119 @@
         background-color: #EFD01B;
         color: #111;
         border: none;
-        cursor: pointer;        
+        cursor: pointer;
+        margin-top: 10px;
       }
       
       #closer {
           display: block;
-          border-top: 1px solid #888;
           margin: 5px 0 5px 0;
           padding-top: 10px;
-          background-color: #DDD;
+          background-color: black;
           padding:10px;
       }
       em {
           font-size: 10px; 
       }
-    #macros {
-	   margin: 0 10px;
+    .addinfo {
+	   font-size: 12px;
+    }
+    #macros, #labels {
+	   margin: 0 0px;
 	   border:1px solid #333;
 	   height: 30px;
 	   width: 250px;
     }
-    #macros_result {
+    #labels {
+	    margin: 0 0 0 10px;	    
+	    width: 150px;
+	    height: 15px;	    
+	    display: inline-block;
+    }
+    #macros_result, #labels_result {
 	    display: none;
 	    position: absolute;
-	    bottom: 26px;
+	    bottom: 46px;
 	    background-color: #f0f0f0;
+	    color: #333;
 		border:1px solid #333;
-	    width: 94%;
+	    width: 85%;
 	    margin: 2%;
 	    padding: 0;
+	    max-height: 150px;
+	    overflow:auto;
     }
-	#macros_result ul {
+    #labels_result {
+	    bottom: 72px;
+    }
+	#macros_result ul, #labels_result ul  {
 		padding: 0;
 		margin: 0;
 	}
-	#macros_result ul li {
+	#macros_result ul li, #labels_result ul li {
 		list-style: none;
 	    padding: 5px 5px;
 	    font-size: 12px;
 	    cursor: pointer;
 	}
-	#macros_result ul li:hover {		
-		background-color: #aaaaaa;		
+	#macros_result ul li:hover,
+	#labels_result ul li:hover	 {		
+		background-color: #EFD01B;
+		color: black;
 	}
+	.tab {
+		background-color: #181D21;
+		padding: 8px;
+	}
+	.tab_select:first-child {
+		margin-left: 8px;
+	}
+	.tab_select {
+		width: 100px;
+		text-align: center;
+		display: inline-block;
+		background-color: #283239;
+		color: white;
+		font-size: 13px;
+		text-transform: uppercase;
+		padding: 5px;
+		margin: 8px 0 0 0;
+	}
+	.tab_select.active {
+		background-color: #181D21;
+		color: #EFD01B;
+	}
+	
+	.tab2 { display:none; margin: 0 8px 8px 8px; }
+
+	.tag {
+	    display: inline-block;
+	    font-size: 10px;
+	    color: #000;
+	    background-color: #efd01b;
+	    margin: 2px;
+	    border-radius: 10px;
+	    padding: 1px 3px;
+	}
+
+	.remove_tag {
+		border-radius: 10px;
+	    background-color: lightgray;
+	    padding: 2px 6px;
+	    font-weight: bold;
+	    position: relative;
+	    right: -4px;
+	    cursor: pointer;
+	    border: 1px solid darkgray;
+	}
+	
+	.tags {
+	    display: inline-block;
+	    vertical-align: top;
+	    width: 149px;
+	    padding-top: 5px;
+	}
+		
     </style>
     <script src="jquery.min.js" type="text/javascript"></script>
     <script src="fuse.min.js" type="text/javascript"></script>
@@ -119,7 +189,8 @@
 </head>
 
 <body>
-    <div id="intercom-conversation">
+	<span rel-tab="tab1" class="tab_select active">Send to Desk</span><span rel-tab="tab2" class="tab_select">Others</span>
+    <div class="tab tab1" id="intercom-conversation">
         <h1>Send Intercom Conversation to Desk</h1>
 
         <div id="message"></div>
@@ -137,26 +208,47 @@
             <textarea id="summary" name="summary"></textarea></p>
 
             <p>Site UUID<br>
-            <input type="text" name="site" id="site" value="">
-            <button name="search_siteid" id="search_siteid">&#x1f50d;</button>
+            <input type="text" name="site" id="site" value=""><button name="search_siteid" id="search_siteid">&#x1f50d;</button>
+            
+			<div class="addinfo">Priority
+            <select id="priority">
+	            <option value="1">1</option>
+	            <option value="2">2</option>
+	            <option value="3">3</option>
+	            <option value="4" selected>4</option>
+	            <option value="5">5</option>
+	            <option value="6">6</option>
+	            <option value="7">7</option>
+	            <option value="8">8</option>
+	            <option value="9">9</option>
+	            <option value="10">10</option>	            	            	            	            	            	            	            	            
+            </select>
+            
+            <div class="labels_result" id="labels_result"></div>
+            <input type="text" id="labels" name="labels" value="" placeholder=" Search Labels (min 4 chars)" ></input></div>
+
             <button name="send-to-desk" id="send-to-desk">Send To Desk</button><span id="progress"></span>
+            <div class="tags"></div>
         </div>
     </div>
-    
-    <!--
-    <div id="closer">
-        <h1>Close using Pantheon Bot</h1>
-
-        <p>Custom closing message:<br>
-        <textarea id="close_message"></textarea><br>
-        <em>Default: This chat session has ended.</em></p>
-        <button name="admin_close" id="admin_close">Close Active Chat Session</button><br>
-    </div>
-    -->
-    
-    <div id="deskmacros">
-	    <div class=="macros_result" id="macros_result"></div>
-	    <p><input type="text" id="macros" value=""  placeholder="Search Macros (min 4 chars)" /></p>
+   
+    <div class="tab tab2" id="#tab2">
+	    <div id="closer">
+	        <h1>Close using Pantheon Bot</h1>
+	
+	        <p>Custom closing message:<br>
+	        <textarea id="close_message"></textarea><br>
+	        <em>Default: This chat session has ended.</em></p>
+	        <button name="admin_close" id="admin_close">Close Active Chat Session</button><br>
+	    </div>
+	
+	    <div id="transcript">
+		    <button name="send_transcript" id="send_transcript">Send Transcript</button><br>
+	    </div>
+	    <div id="deskmacros">
+		    <div class="macros_result" id="macros_result"></div>
+		    <p><input type="text" id="macros" value=""  placeholder=" Search Macros (min 4 chars)" /></p>
+	    </div>
     </div>
     
 </body>

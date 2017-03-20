@@ -53,6 +53,72 @@ var call_desk_api = function(data, path = '', method='POST',successHandler, erro
 		}
 	};
 
+
+/**
+ * Function for calling SendGrid API.
+ */
+var call_sendgrid_api = function(url, successHandler, errorHandler) {
+		sendgrid_api = 'https://api.sendgrid.com';
+		url = sendgrid_api + url;
+		var xhr = typeof XMLHttpRequest != 'undefined' ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+		xhr.open('get', url, false); // false here sets to synchronous mode. Really important for this to be synchronous.
+		xhr.setRequestHeader("Accept", "application/json");
+		xhr.setRequestHeader("Authorization", "Basic " + btoa(sendgrid_id + ":" + sendgrid_key));
+		xhr.send(null);
+		if (xhr.status === 200) {
+			return JSON.parse(xhr.responseText);
+		}
+	};
+
+var call_sendgrid_api_post = function(url, data) {
+		sendgrid_api = 'https://api.sendgrid.com';
+		url = sendgrid_api + url;
+/*		var xhr = typeof XMLHttpRequest != 'undefined' ? new XMLHttpRequest() : new ActiveXObject('Microsoft.XMLHTTP');
+		xhr.open('POST', url, true); // false here sets to synchronous mode. Really important for this to be synchronous.
+		xhr.setRequestHeader("Accept", "application/json");
+		xhr.setRequestHeader("Content-Type", "application/json");
+		xhr.setRequestHeader("Authorization", "Bearer " + sendgrid_key);
+		xhr.onreadystatechange = function() {//Call a function when the state changes.
+		    if(xhr.readyState == 4 && xhr.status == 200) {
+				console.log(JSON.parse(xhr.responseText));
+		    }
+		}
+		xhr.send(data);
+		if (xhr.status === 200) {
+			return JSON.parse(xhr.responseText);
+		}
+		
+		*/
+/*		$.ajax({
+		    url: url,
+		    headers: {
+		        'Authorization':"Bearer " + sendgrid_key,
+		        'Content-Type':'application/json'
+		    },
+		    method: 'POST',
+		    dataType: 'json',
+		    data: data,
+		    success: function(response){
+		      console.log('succes: '+response);
+		    }
+		  });*/
+		  
+		 $.ajax({
+		        url: "https://api.sendgrid.com/api/mail.send.json",
+		        type: 'POST',
+		        data: data,
+		        async: false,
+		        success: function (data) {
+		          alert(data)
+		        },
+		        cache: false,
+		        contentType: false,
+		        processData: false
+		      });		  
+	};	
+	
+
+
 /**
  * Error redering function.
  */
@@ -223,13 +289,14 @@ function html2textile(msg) {
 /**
  * Creates a json object that will be used to call Desk's API and create a case.
  */
-function desk_create_case(subject, site_uuid, email, message) {
+function desk_create_case(subject, site_uuid, email, message, labels, priority) {
 	renderMessage("Creating Desk Ticket...");			        				
 	var desk_case = {
 		"type": "email",
 		"subject": subject,
 		"status": "open",
-		"labels": ["Chat"],
+		"priority": priority,
+		"labels": labels,
 		"message": {
 			"direction": "out",
 			"status": "sent",
@@ -256,13 +323,37 @@ function desk_create_note(case_id, note) {
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
 // +++++++++++++++++++++++++++ Main script start here +++++++++++++++++++++++++++
 // ++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++
+
+jQuery(document).ready(function($){
+	init($);
+});
+
 var summary = "";
 var site_uuid = "";
 var subject = "";
 var conversationID = "";
-document.addEventListener('DOMContentLoaded', function() {
+
+//Fuse/Search Options
+var options = { shouldSort: true, threshold: 0.3, location: 0,
+   				distance: 100, maxPatternLength: 32,
+   				keys: [ "name", "id" ]
+};
+
+
+function init($) {
+	//Tab Pane Selector
+	$('.tab_select').click(function(){
+		$('.tab_select').removeClass('active');
+		$(this).addClass('active');
+		var tab = $(this).attr('rel-tab');
+		$('.tab').hide();
+		$('.'+tab).show();
+	});
+	
+	
 	var conversation = "";
 	var url = "";
+
 	renderMessage("This will take a few seconds to process.");
 	// Getting the conversation ID from the intercom url.
 	chrome.tabs.query({
@@ -291,57 +382,112 @@ document.addEventListener('DOMContentLoaded', function() {
 	});
 	
 	
-	//Lets try to load site-id
-	var search_siteid = document.getElementById('search_siteid');
-	search_siteid.addEventListener('click', function() {
-		search_siteid.innerHTML = "<img style='margin-top: 4px; width: 12px; height: 13px;' src='/loading.gif'>";
+	//Try Loading site-id
+	$('#search_siteid').on('click', function() {
+		$(this).innerHTML = "<img style='margin-top: 4px; width: 12px; height: 13px;' src='/loading.gif'>";
 		setTimeout(function(){ 
+			console.log(conversationID);
 			var site_id = "";
 			var user_info = getIntercomUserViaConversation(conversationID);
 			if(typeof user_info.custom.most_recent_site_viewed === "undefined") {
 				renderError('Site UUID not available');
-				search_siteid.innerHTML = "&#x1f50d;";
+				$(this).innerHTML = "&#x1f50d;";
 			} else {
 				if(user_info.custom.most_recent_site_viewed.indexOf('/sites/') !== -1) {
-					document.getElementById('site').value = user_info.custom.most_recent_site_viewed.replace('https://admin.dashboard.pantheon.io/sites/','');
-					setCookie(conversationID + '_site', document.getElementById('site').value, 1);				
+					$('#site').val(user_info.custom.most_recent_site_viewed.replace('https://admin.dashboard.pantheon.io/sites/',''));
+					setCookie(conversationID + '_site', $('#site').value , 1);				
 				} else {
 					renderError('Site UUID not available');	
 				}
-				search_siteid.innerHTML = "&#x1f50d;";
+				$(this).innerHTML = "&#x1f50d;";
 			}
-			
 		}, 500);
 	});
 	
-	
-	var send_to_desk = document.getElementById('send-to-desk');
-	// Adding a listener to the Send To Desk button.
-	send_to_desk.addEventListener('click', function() {
-		conversationID = document.getElementById('intercom-conversation-id').value;
+	//Send to Desk
+	$('#send-to-desk').on('click', function() {
+		conversationID = $('#intercom-conversation-id').val();
 		if (!conversationID || conversationID == '') {
 			renderError("Please add a conversation ID.");
 			return;
 		}
 
 		$(function(){
-		    progress(send_to_desk).done(function(){
+		    progress($('#send-to-desk')).done(function(){
 		        renderMessage("Collecting transcript...");		        		        
 		        getConversation(conversationID).done(function(){
-		            console.log('Pulling Conversation ('+conversationID+') Completed!');
+		            renderMessage('Pulling Conversation ('+conversationID+') Completed!');
 		        });
 		    });
 		});
 	});
+		
+	//Labels
+	var labels = null;
+	var labels_result = $('#labels_result');	
+	var fuse_labels = null;
+
+	$('#labels').on('focus', function(){
+		var search_labels = $(this)
+		search_labels.css({'background':"transparent url('/loading.gif') no-repeat","background-position":"130px 5px","background-size":"12px 12px"});
+		search_labels.attr("placeholder"," Please wait...");
+
+		if (labels == null) {
+			labels = call_desk_api(null,'labels?page=1&per_page=1000','GET');		
+		}			
+
+		var checker = setInterval(function(){
+			if(labels != null) {
+				fuse_labels = new Fuse(labels._embedded.entries, options);					
+				search_labels.css("background","");
+				search_labels.attr("placeholder"," Search Labels (min 4 chars)");			
+				clearInterval(checker);
+			}
+		}, 500);
+		
+	});
 	
-	/*
-	var admin_close = document.getElementById('admin_close');
-	admin_close.addEventListener('click', function() {
+	$('#labels').on('keyup', function() {
+		search_labels = $(this);
+		if(search_labels.val().length > 3) {
+		    labels_result.fadeIn('fast');  
+			var labels_items = "<ul>";
+			$.each(fuse_labels.search(search_labels.val()), function(i, v){
+				labels_items += "<li rel-id='"+v.id+"'>"+v.name+"</li>";
+			});
+			labels_items += "</ul>";
+			labels_result.html(labels_items);
+		 } else {
+			labels_result.html("");
+		    labels_result.fadeOut('fast');
+		 }
+	});	
+	
+
+	$(document).on('click', '.labels_result ul li', function(){
+		var label_id = $(this).attr('rel-id');
+		var label_text = $(this).text();
+		var tag = "<div rel-id='"+label_id+"' class='tag tag-"+label_id+"'>"+label_text+"<span class='remove_tag' rel-id='"+label_id+"'>X</span></div>";
+		$('.tags').append(tag);
+		labels_result.fadeOut('fast');
+		$('#labels').val('');
+	});
+	
+	$(document).on('click', '.remove_tag', function(){
+		$(document).find('.tag-'+$(this).attr('rel-id')).remove();
+	});
+	
+	
+	
+	/* OTHERS TAB */
+	
+	// Closing Chat using Pantheon Bot
+	$('#admin_close').on('click', function(){
 		var body = "";
 	    var url = "/conversations/"+conversationID+"/reply";
 	    		
-		if(document.getElementById('close_message').value != "") {
-			body = document.getElementById('close_message').value;
+		if($('#close_message').val() != "") {
+			body = $('#close_message').val();
 		} else {
 			body = "This chat session has ended.";
 		}
@@ -354,83 +500,133 @@ document.addEventListener('DOMContentLoaded', function() {
 	    };
 
 		call_intercom_api_post(url, JSON.stringify(data));
-		document.getElementById('close_message').value = "";
+		$('#close_message').val("");
 	});
-	*/
-	//Load Desk Macros
-	var macros = call_desk_api(null,'macros?page=1&per_page=200','GET');
-	
-	var options = {
-	  shouldSort: true,
-	  threshold: 0.3,
-	  location: 0,
-	  distance: 100,
-	  maxPatternLength: 32,
-	  keys: [
-	    "name",
-	    "id"
-	]
-	};
 
-//    console.log(JSON.stringify(macros._embedded.entries));
-	var fuse = new Fuse(macros._embedded.entries, options);
-	var macros_result = jQuery('#macros_result');
-	var search_macros = document.getElementById('macros');
-	search_macros.addEventListener('keyup', function() {
-		 if(search_macros.value.length > 3) {
-		    jQuery('#macros_result').fadeIn('fast');  
+	//Macros
+	var macros = null;
+	var macros_result = $('#macros_result');	
+	var fuse_macros = null;
+	
+	$("#macros").on('focus', function(){
+		var search_macros = $(this);			
+			search_macros.css({'background':"transparent url('/loading.gif') no-repeat","background-position":"230px 5px","background-size":"20px 20px"});
+			search_macros.attr("placeholder"," Please wait...");
+
+			if (macros == null) {
+				macros = call_desk_api(null,'macros?page=1&per_page=200','GET');		
+			}			
+
+			var checker = setInterval(function(){
+				if(macros == null) {
+					console.log(macros);
+				} else {
+					fuse_macros = new Fuse(macros._embedded.entries, options);					
+					search_macros.css("background","");
+					search_macros.attr("placeholder","Search Macros (min 4 chars)");		
+					clearInterval(checker);
+				}
+			}, 500);
+	});	
+	
+	$("#macros").on('keyup', function(){
+		var search_macros = $(this);		
+
+		if(search_macros.val().length > 3) {
+		    macros_result.fadeIn('fast');  
 			var macros_items = "<ul>";
-			jQuery.each(fuse.search(search_macros.value), function(i, v){
+			jQuery.each(fuse_macros.search(search_macros.val()), function(i, v){
 				macros_items += "<li rel-id='"+v.id+"'>"+v.name+"</li>";
 			});
 			macros_items += "</ul>";
 			macros_result.html(macros_items);
 		 } else {
 			macros_result.html("");
-		    jQuery('#macros_result').fadeOut('fast');  			
+		    macros_result.fadeOut('fast');  			
 		 }
 	});	
 	
-    jQuery(document).on('click','#macros_result li', function(){
+    $(document).on('click','#macros_result li', function(){
 	   var macro_show = call_desk_api(null,'macros/'+jQuery(this).attr('rel-id')+'/actions','GET');
-	   jQuery('#macros_result').fadeOut('fast'); 
+	   $('#macros_result').fadeOut('fast'); 
 
 	   var macro_text =  macro_show._embedded.entries.find((item) => item.type === 'set-case-quick-reply').value;
 
 		chrome.tabs.executeScript(null,{
-//			code: "var macro_text="+JSON.stringify(macro_text)+";"
-//			code: 'var macro_text="'+macro_text+'";'
-
 			code: "var macro_text=`" + macro_text + "`;"
 		}, function(){
 			chrome.tabs.executeScript(null, {file:"macro.js"})
 		});
 	});
-});
+	
+	
+	
+	/**
+	 * Making sure the cookies is set before starting so it's not undefined.
+	 */
+	$(document).on('keyup blur', 'input[type=text], textarea', function() {
+		if (!(typeof getCookie(conversationID + '_subject') === 'undefined')) {
+			setCookie(conversationID + '_subject', document.getElementById('subject').value, 1);
+		}
+		if (!(typeof getCookie(conversationID + '_summary') === 'undefined')) {
+			setCookie(conversationID + '_summary', document.getElementById('summary').value, 1);
+		}
+		if (!(typeof getCookie(conversationID + '_site') === 'undefined')) {
+			setCookie(conversationID + '_site', document.getElementById('site').value, 1);
+		}
+	});
 
-/**
- * Making sure the cookies is set before starting so it's not undefined.
- */
-jQuery(document).on('keyup blur', 'input[type=text], textarea', function() {
-	if (!(typeof getCookie(conversationID + '_subject') === 'undefined')) {
-		setCookie(conversationID + '_subject', document.getElementById('subject').value, 1);
-	}
-	if (!(typeof getCookie(conversationID + '_summary') === 'undefined')) {
-		setCookie(conversationID + '_summary', document.getElementById('summary').value, 1);
-	}
-	if (!(typeof getCookie(conversationID + '_site') === 'undefined')) {
-		setCookie(conversationID + '_site', document.getElementById('site').value, 1);
-	}
-});
+
+	//Send Transcript
+    $('#send_transcript').on('click', function(){
+		getIntercomConversation(conversationID, function(conversation, notes, author) {
+			renderMessage("Transcript collected...");
+
+			var data = {
+			  "personalizations": [ 
+			  	{ "to": 
+				  [ { "email": author.email } ],
+			      "subject": "Pantheon Transcript: " + conversationID
+			    }],
+			    
+			  "from": {
+			    "email": "noreply@getpantheon.com"
+			  },
+			  "content": [
+			    {
+			      "type": "text/html",
+			      "value": conversation
+			    }
+			  ]
+			}
+			
+			var data  = "api_user="+sendgrid_id;
+			    data += "&api_key="+sendgrid_key;
+			    data += "&to="+author.email;
+			    data += "&toname="+author.name;
+			    data += "&subject=Pantheon Chat Transcript: "+conversationID;
+			    data += "&text="+conversation;
+			    data += "&from=noreply@getpantheon.com";
+			
+			var mail_result = call_sendgrid_api_post('/v3/mail/send', data);
+
+			console.log(mail_result);
+
+		});
+	});
+
+
+}
+
+
 
 /**
  * Locking send button and showing circle progress icon.
  */
 function progress(send_button){
     var dfrd = $.Deferred();
-    console.log(send_button);
-	send_button.style.background = "#AAAAAA";
-	send_button.disabled = true;
+	send_button.css("background","#777777");
+	send_button.prop('disabled', true);
 	document.getElementById("progress").innerHTML = "<img style='margin-bottom: -7px; width: 25px; height: 25px;' src='/loading.gif'>";
     dfrd.resolve();
     return dfrd.promise();
@@ -449,11 +645,23 @@ function getConversation(conversationID) {
 			subject = "[Chat " + conversationID + "] " + document.getElementById('subject').value;
 			site = document.getElementById('site').value;
 			summary = document.getElementById('summary').value;
+			priority = document.getElementById('priority').value;
+
+			jQuery('.remove_tag').remove();
+						
+			var tags = document.querySelectorAll(".tags .tag");
+			var labels = ["Chat"];
+			for (var i=0;i<tags.length;i++) {
+				labels.push(tags[i].innerText);
+			}
+
+			
 			if (summary != "") {
 				conversation = summary + "\n\n-----\n\n" + conversation;
 			}
+			
 			// Call desk api.
-			result = desk_create_case(subject, site, author.email, conversation);
+			result = desk_create_case(subject, site, author.email, conversation, labels, priority);
 			if (result.id != '') {
 				notes += "\n-----\nIntercom Chat URL:  https://app.intercom.io/a/apps/xkegk7cr/inbox/conversation/" + conversationID + " \n";
 				notes += "On this Chat: \n";
