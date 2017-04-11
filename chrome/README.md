@@ -28,19 +28,19 @@ You should now see a Pantheon icon on the upper-right corner of your Google Chro
 ![Chrome Developer Mode](https://d1ro8r1rbfn3jf.cloudfront.net/ms_104022/2UcVheEYnxr2cKqO5CJSwFkURrRfGp/Untitled-1%2B%2540%2B100%2525%2B%2528Layer%2B2%252C%2BRGB%252F8%252A%2529%2B%252A%2B2017-04-11%2B21-47-28.jpg?Expires=1492004866&Signature=Wgi9nPvyPCRTogjwjRdjc6Y75HsAIbDGzjzK525TcfoMoUK8s~CwzKSykclKBQAO-baWY~VtrHmo~tgJKVsWpu4CRXU~XN7hrw0E-0TWc4hi36i3bSpMPfHF2DQ-t2TNrHkILa7MAwZ-yJ-H2Xr-Pm~NQ9WZpBRqymZdeNebsbf3V0byc9NAxPNX7URyP6TNFAF-P7aA-PE8n1KxFl9VkVQJJg1qBCeJUi95AMSGeJnIU4BlTFbHd0dW2pz2D6nwqmGERZ9wl4flNgtJFSBDh7SvfEmvdyzBqzAHzcKW2VKL0cyqV~umoMrQZfoPiTeJyIg1zO3oXF8T80-jRncg-Q__&Key-Pair-Id=APKAJHEJJBIZWFB73RSA)
 
 ### Send-to-Desk Form/Fields
-- Intercom Conversation ID * : Is populated automatically when you're on active intercom conversation page.
+- Intercom Conversation ID * : Populated automatically when on the active intercom conversation page.
 - Conversation Subject * : Serves as Subject of Desk Ticket.
-- Summary : Will appear first part of the Desk Ticket before the transcript of the conversation.
-- Site UUID * : Needed to link Desk Ticket to Dashboard Support ticket list. Search Icon will help auto populate when value is available.
-- Priority : Set's the priority of the Desk Ticket.
-- Search Labels : This add labels to the Desk Ticket.
+- Summary : Appear within the first part of the Desk Ticket before the transcript of the conversation.
+- Site UUID * : Link Desk Ticket to Dashboard Support ticket list. Search Icon help auto populate when UUID value is available.
+- Priority : Set the priority of the Desk Ticket.
+- Search Labels : Add labels to the Desk Ticket.
 
 ### Others
 - Close using Pantheon Bot: Close conversation with a message using Pantheon Bot username (Usecase: If the customer unable to reply for a long time, this will look an automated closing of chat)
-- Search Macros: Cursor/pointer should be active at the chat field as macros will appear where's your cursor is.
+- Search Macros: Cursor/pointer should be at the chat field as macros will appear where's your cursor is.
 
 ## Change Logs:
 March 20, 2017
 - Integrating priority, labels and splitting the UI into tabs. 
-- You can still search through Desk macros on the Others tab.
+- Search through Desk macros on the "Others" tab.
 
