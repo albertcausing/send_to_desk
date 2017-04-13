@@ -642,7 +642,7 @@ function getConversation(conversationID) {
 	setTimeout(function(){
 		getIntercomConversation(conversationID, function(conversation, notes, author) {
 			renderMessage("Transcript collected...");			        			
-			subject = "[Chat " + conversationID + "] " + document.getElementById('subject').value;
+			subject = document.getElementById('subject').value;
 			site = document.getElementById('site').value;
 			summary = document.getElementById('summary').value;
 			priority = document.getElementById('priority').value;
