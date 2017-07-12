@@ -423,6 +423,7 @@ function init($) {
 	});
 		
 	//Labels
+	var labels_temp = null;
 	var labels = null;
 	var labels_result = $('#labels_result');	
 	var fuse_labels = null;
@@ -433,12 +434,16 @@ function init($) {
 		search_labels.attr("placeholder"," Please wait...");
 
 		if (labels == null) {
-			labels = call_desk_api(null,'labels?page=1&per_page=1000','GET');		
+			labels = [];
+			for(var i=1; i<=3; i++) {
+				labels_temp = call_desk_api(null,'labels?page='+i+'&per_page=500','GET');
+				labels = labels.concat(labels_temp._embedded.entries);				
+			}
 		}			
 
 		var checker = setInterval(function(){
 			if(labels != null) {
-				fuse_labels = new Fuse(labels._embedded.entries, options);					
+				fuse_labels = new Fuse(labels, options);					
 				search_labels.css("background","");
 				search_labels.attr("placeholder"," Search Labels (min 4 chars)");			
 				clearInterval(checker);
