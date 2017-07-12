@@ -280,7 +280,7 @@ function html2textile(msg) {
 	});
 	body.replace(/[^<]*(<img src="([^"]+)">)/g, function() {
 		match = Array.prototype.slice.call(arguments, 1, 4);
-		body += "!" + match[1] + "! \n";
+		body += "!{display:block;width:500px;}" + match[1] + "! \n";
 	});
 	return body;
 }
@@ -289,8 +289,9 @@ function html2textile(msg) {
 /**
  * Creates a json object that will be used to call Desk's API and create a case.
  */
-function desk_create_case(subject, site_uuid, email, message, labels, priority) {
-	renderMessage("Creating Desk Ticket...");			        				
+function desk_create_case(subject, site_uuid, org_uuid, email, message, labels, priority) {
+	renderMessage("Creating Desk Ticket...");
+
 	var desk_case = {
 		"type": "email",
 		"subject": subject,
@@ -307,7 +308,8 @@ function desk_create_case(subject, site_uuid, email, message, labels, priority) 
 			"body_html": message
 		},
 		"custom_fields": {
-			"site_uuid": site_uuid
+			"site_uuid": site_uuid,
+			"org_uuid": org_uuid,
 		}
 	};
 	return call_desk_api(JSON.stringify(desk_case), 'cases');
@@ -383,23 +385,64 @@ function init($) {
 	
 	
 	//Try Loading site-id
-	$('#search_siteid').on('click', function() {
-		$(this).innerHTML = "<img style='margin-top: 4px; width: 12px; height: 13px;' src='/loading.gif'>";
+	$(document).ready(function() {
 		setTimeout(function(){ 
-			console.log(conversationID);
 			var site_id = "";
+			
+			$('.label_sgu').append("<img class='cogspin' style='margin-top: 4px; width: 12px; height: 13px;' src='/loading.gif'>");
+			
 			var user_info = getIntercomUserViaConversation(conversationID);
-			if(typeof user_info.custom.most_recent_site_viewed === "undefined") {
-				renderError('Site UUID not available');
-				$(this).innerHTML = "&#x1f50d;";
-			} else {
-				if(user_info.custom.most_recent_site_viewed.indexOf('/sites/') !== -1) {
-					$('#site').val(user_info.custom.most_recent_site_viewed.replace('https://admin.dashboard.pantheon.io/sites/',''));
-					setCookie(conversationID + '_site', $('#site').value , 1);				
-				} else {
-					renderError('Site UUID not available');	
+
+			if(!(typeof user_info.custom.most_recent_site_viewed === "undefined") && user_info.custom.most_recent_site_viewed.indexOf('/sites/') !== -1) {
+				$('#site').val(user_info.custom.most_recent_site_viewed.replace('https://admin.dashboard.pantheon.io/sites/',''));
+				setCookie(conversationID + '_site', $('#site').value , 1);								
+			}
+			if(!(typeof user_info.custom.most_recent_organization_viewed === "undefined") && user_info.custom.most_recent_organization_viewed.indexOf('/organizations/') !== -1) {
+				$('#org').val(user_info.custom.most_recent_organization_viewed.replace('https://admin.dashboard.pantheon.io/organizations/',''));
+				setCookie(conversationID + '_org', $('#org').value , 1);
+			}
+			$('.label_sgu .cogspin').remove();
+			
+			//Automating Labels and Priority
+			var level_switch = { "pro":{"id":"692733","prio":"4"},
+				"business":{"id":"1204905","prio":"6"},
+				"business_xl":{"id":"2711847","prio":"6"},
+				"elite":{"id":"1592917","prio":"9"},
+				"elite_max":{"id":"2719687","prio":"9"},
+				"elite_plus":{"id":"2720493","prio":"9"},
+				"elite_starter":{"id":"2908274","prio":"9"},
+				"sandbox":{"id":"1771128","prio":"1"},
+				"ally":{"id":"2446317","prio":"4"},
+				"ally_org":{"id":"2464740","prio":"4"},
+				"partner":{"id":"2444522","prio":"4"},
+				"reseller":{"id":"2442499","prio":"4"},
+				"reseller_org":{"id":"2468596","prio":"4"},
+				"partner_org":{"id":"2464599","prio":"4"},
+				"enterprise_org":{"id":"2460766","prio":"8"},
+				"enterprise_max":{"id":"1170767","prio":"8"},
+				"Enterprise":{"id":"457909","prio":"8"},
+				"enterprise":{"id":"457909","prio":"8"},
+				"EDU":{"id":"2768766","prio":"4"},
+				"edu_plus_org":{"id":"3029163","prio":"4"},
+				"edu_org":{"id":"2770312","prio":"4"},
+				"pantheon_one_org":{"id":"2711963","prio":"1"},
+				"oem_org":{"id":"2481951","prio":"4"},
+				"free":{"id":"690682","prio":"1"},
+				"basic":{"id":"694021","prio":"2"},
+				"professional":{"id":"3818701","prio":"4"},
+				"pro":{"id":"692733","prio":"4"}
 				}
-				$(this).innerHTML = "&#x1f50d;";
+				
+			if(!(typeof user_info.custom.service_level === "undefined")) {				
+				$('#priority').val(level_switch[user_info.custom.service_level]["prio"]);
+				
+				if(user_info.custom.service_level == "free") {
+					user_info.custom.service_level = "sandbox";
+				}
+								
+				var tag = "<div rel-id='"+level_switch[user_info.custom.service_level]["id"]+"' class='tag tag-"+level_switch[user_info.custom.service_level]["id"]+"'>"+user_info.custom.service_level+"<span class='remove_tag' rel-id='"+level_switch[user_info.custom.service_level]["id"]+"'>X</span></div>";
+
+				$('.tags').append(tag);
 			}
 		}, 500);
 	});
@@ -428,7 +471,7 @@ function init($) {
 	var labels_result = $('#labels_result');	
 	var fuse_labels = null;
 
-	$('#labels').on('focus', function(){
+	$('#labels').ready(function(){
 		var search_labels = $(this)
 		search_labels.css({'background':"transparent url('/loading.gif') no-repeat","background-position":"130px 5px","background-size":"12px 12px"});
 		search_labels.attr("placeholder"," Please wait...");
@@ -468,7 +511,6 @@ function init($) {
 		 }
 	});	
 	
-
 	$(document).on('click', '.labels_result ul li', function(){
 		var label_id = $(this).attr('rel-id');
 		var label_text = $(this).text();
@@ -507,6 +549,7 @@ function init($) {
 		call_intercom_api_post(url, JSON.stringify(data));
 		$('#close_message').val("");
 	});
+
 
 	//Macros
 	var macros = null;
@@ -649,6 +692,8 @@ function getConversation(conversationID) {
 			renderMessage("Transcript collected...");			        			
 			subject = document.getElementById('subject').value;
 			site = document.getElementById('site').value;
+			orgid = document.getElementById('org').value; 
+			userid = document.getElementById('user').value;
 			summary = document.getElementById('summary').value;
 			priority = document.getElementById('priority').value;
 
@@ -666,7 +711,7 @@ function getConversation(conversationID) {
 			}
 			
 			// Call desk api.
-			result = desk_create_case(subject, site, author.email, conversation, labels, priority);
+			result = desk_create_case(subject, site, orgid, author.email, conversation, labels, priority);
 			if (result.id != '') {
 				notes += "\n-----\nIntercom Chat URL:  https://app.intercom.io/a/apps/xkegk7cr/inbox/conversation/" + conversationID + " \n";
 				notes += "On this Chat: \n";
@@ -693,18 +738,22 @@ function getConversation(conversationID) {
 				document.getElementById('main').style.display = 'none';
 				document.getElementById('subject').value = "";
 				document.getElementById('site').value = "";
+				document.getElementById('org').value = ""
+				document.getElementById('user').value = ""								
 				document.getElementById('summary').value = "";
 				document.getElementById('intercom-conversation-id').value = "";
 				document.getElementById("progress").innerHTML = "";
 				setCookie(conversationID + '_subject', document.getElementById('subject').value, 1);
 				setCookie(conversationID + '_summary', document.getElementById('summary').value, 1);
 				setCookie(conversationID + '_site', document.getElementById('site').value, 1);
+				setCookie(conversationID + '_org', document.getElementById('org').value, 1);
+				setCookie(conversationID + '_user', document.getElementById('user').value, 1);
+
 			}	
 		}, function(errorMessage) {
 			renderError('Error: ' + errorMessage);
 		});
 		
-
 	    dfrd1.resolve();
 	},500);
 	    
@@ -735,5 +784,3 @@ function getCookie(c_name) {
 		}
 	}
 }
-
-
