@@ -36,7 +36,10 @@
       #subject, #intercom-conversation-id, #summary, #close_message {
         width: 250px;
       }
-      #site, #macros {
+      #site,  #org, #user {
+	    width: 227px;  
+      }
+      #macros {
 	    width: 220px;  
       }
 
@@ -180,6 +183,10 @@
 	    width: 149px;
 	    padding-top: 5px;
 	}
+	.label_input {
+		display:inline-block;
+		width: 23px;
+	}
 		
     </style>
     <script src="jquery.min.js" type="text/javascript"></script>
@@ -198,8 +205,8 @@
         <div id="error"></div>
 
         <div id="main">
-            <p>Intercom Conversation ID<br>
-            <input type="text" name="intercom-conversation" id="intercom-conversation-id" value=""></p>
+
+            <input type="hidden" name="intercom-conversation" id="intercom-conversation-id" value="">
 
             <p>Conversation Subject<br>
             <input type="text" name="subject" id="subject" value=""></p>
@@ -207,8 +214,9 @@
             <p>Summary<br>
             <textarea id="summary" name="summary"></textarea></p>
 
-            <p>Site UUID<br>
-            <input type="text" name="site" id="site" value=""><button name="search_siteid" id="search_siteid">&#x1f50d;</button>
+			<input type="hidden" name="site" id="site" value="">
+			<input type="hidden" name="org" id="org" value="">
+			<input type="hidden" name="user" id="user" value="">
             
 			<div class="addinfo">Priority
             <select id="priority">
@@ -241,11 +249,10 @@
 	        <em>Default: This chat session has ended.</em></p>
 	        <button name="admin_close" id="admin_close">Close Active Chat Session</button><br>
 	    </div>
-	    <!--
+	
 	    <div id="transcript">
 		    <button name="send_transcript" id="send_transcript">Send Transcript</button><br>
 	    </div>
-	    -->
 	    <div id="deskmacros">
 		    <div class="macros_result" id="macros_result"></div>
 		    <p><input type="text" id="macros" value=""  placeholder=" Search Macros (min 4 chars)" /></p>
